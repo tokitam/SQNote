@@ -1,0 +1,5 @@
+/vendor/
+/data/*.sqnote
+/.env
+/public/assets/node_modules/
+*.DS_Store
