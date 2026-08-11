@@ -1,0 +1,10 @@
+{% extends 'layout.html.twig' %}
+{% block title %}タグ — SQNote{% endblock %}
+{% block content %}
+<h2>タグ一覧</h2>
+<ul class="tag-cloud">
+  {% for tag in tags %}
+    <li><a href="/tags/{{ tag.name|url_encode }}">#{{ tag.name }} <span class="count">{{ tag.note_count }}</span></a></li>
+  {% endfor %}
+</ul>
+{% endblock %}
