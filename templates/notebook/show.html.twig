@@ -1,0 +1,6 @@
+{% extends 'layout.html.twig' %}
+{% block title %}{{ notebook.name }} — SQNote{% endblock %}
+{% block content %}
+<h2>{{ notebook.name }} ({{ total }}件)</h2>
+{% include 'note/_list.html.twig' %}
+{% endblock %}
