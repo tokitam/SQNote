@@ -1,0 +1,51 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}エクスポート — SQNote{% endblock %}
+
+{% block content %}
+<div class="export-page">
+  <h1>エクスポート</h1>
+  <p class="page-desc">データを各種フォーマットでエクスポートします。</p>
+
+  <div class="export-section">
+    <h2>JSON エクスポート</h2>
+    <p>全ノートを JSON 形式でダウンロードします。添付ファイルは Base64 で埋め込まれます。</p>
+    <div class="export-actions">
+      <a href="/export/json" class="btn btn-primary">全ノートを JSON でダウンロード</a>
+    </div>
+    {% if notebooks %}
+      <details class="export-notebook-filter">
+        <summary>ノートブックを指定してエクスポート</summary>
+        <ul class="notebook-export-list">
+          {% for nb in notebooks %}
+            <li>
+              <a href="/export/json?notebook_id={{ nb.id }}" class="btn">
+                {{ nb.name }}（{{ nb.note_count }} 件）
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+  </div>
+
+  <div class="export-section">
+    <h2>Markdown ZIP エクスポート</h2>
+    <p>全ノートをノートブックごとのフォルダに分けて Markdown または HTML ファイルとして ZIP ダウンロードします。</p>
+    <div class="export-actions">
+      <a href="/export/markdown" class="btn btn-primary">Markdown ZIP をダウンロード</a>
+    </div>
+  </div>
+
+  <div class="export-section">
+    <h2>データベースバックアップ</h2>
+    <p>
+      暗号化済みの <code>.sqnote</code> データベースファイルをそのままダウンロードします。<br>
+      このファイルをコピーするだけで完全なバックアップになります。復元時は同じパスフレーズが必要です。
+    </p>
+    <div class="export-actions">
+      <a href="/export/backup" class="btn">データベースファイル（.sqnote）をダウンロード</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

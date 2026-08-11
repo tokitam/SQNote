@@ -1,0 +1,92 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}インポート — SQNote{% endblock %}
+
+{% block content %}
+<div class="import-page">
+  <h1>Evernote インポート</h1>
+  <p class="page-desc">.enex ファイルをアップロードしてノートをインポートします。</p>
+
+  {% if error %}
+    <div class="alert alert-error">{{ error }}</div>
+  {% endif %}
+
+  {% if results is not null %}
+    <div class="import-results">
+      {% if dry_run %}
+        <div class="alert alert-info">ドライランのため DB への書き込みは行っていません。</div>
+      {% endif %}
+      <h2>インポート結果</h2>
+      <table class="results-table">
+        <tr><th>合計</th><td>{{ results.total }} 件</td></tr>
+        <tr><th>インポート</th><td>{{ results.imported }} 件</td></tr>
+        <tr><th>スキップ</th><td>{{ results.skipped }} 件</td></tr>
+        <tr><th>エラー</th><td>{{ results.errors }} 件</td></tr>
+      </table>
+      {% if results.warnings %}
+        <div class="import-warnings">
+          <h3>警告</h3>
+          <ul>
+            {% for warn in results.warnings %}
+              <li>{{ warn }}</li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endif %}
+      {% if not dry_run and results.imported > 0 %}
+        <p><a href="/" class="btn btn-primary">ノート一覧へ</a></p>
+      {% endif %}
+    </div>
+    <hr class="section-divider">
+  {% endif %}
+
+  <form method="post" action="/import" enctype="multipart/form-data" class="import-form">
+    <div class="form-group">
+      <label for="enex_file">.enex ファイル <span class="required">*</span></label>
+      <input type="file" id="enex_file" name="enex_file" accept=".enex" required>
+    </div>
+
+    <div class="form-group">
+      <label for="notebook_id">インポート先ノートブック</label>
+      <select id="notebook_id" name="notebook_id" class="form-control">
+        <option value="new">＋ 新しいノートブックを作成</option>
+        {% for nb in notebooks %}
+          <option value="{{ nb.id }}">{{ nb.name }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="form-group" id="new-notebook-group">
+      <label for="new_notebook_name">新しいノートブック名</label>
+      <input type="text" id="new_notebook_name" name="new_notebook_name"
+             placeholder="省略時はファイル名を使用" class="form-control">
+    </div>
+
+    <div class="form-group form-check">
+      <label>
+        <input type="checkbox" name="skip_duplicates">
+        重複をスキップ（同タイトル・同作成日時のノートをスキップ）
+      </label>
+    </div>
+
+    <div class="form-group form-check">
+      <label>
+        <input type="checkbox" name="dry_run">
+        ドライラン（書き込みなし・確認のみ）
+      </label>
+    </div>
+
+    <div class="form-actions">
+      <button type="submit" class="btn btn-primary">インポート開始</button>
+    </div>
+  </form>
+</div>
+
+<script>
+  const sel = document.getElementById('notebook_id');
+  const grp = document.getElementById('new-notebook-group');
+  function toggle() { grp.style.display = sel.value === 'new' ? '' : 'none'; }
+  sel.addEventListener('change', toggle);
+  toggle();
+</script>
+{% endblock %}

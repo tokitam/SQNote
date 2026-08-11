@@ -86,4 +86,35 @@ a:hover { text-decoration: underline; }
 .editor-actions { display: flex; gap: 8px; }
 .editor-cm { flex: 1; border: 1px solid var(--color-border); border-radius: 4px; overflow: auto; min-height: 400px; }
 .editor-cm .cm-editor { height: 100%; }
+
+/* Import / Export pages */
+.import-page, .export-page { max-width: 640px; }
+.import-page h1, .export-page h1 { font-size: 22px; margin-bottom: 6px; }
+.page-desc { color: var(--color-muted); margin-bottom: 24px; }
+.alert { padding: 10px 14px; border-radius: 4px; margin-bottom: 16px; font-size: 13px; }
+.alert-error { background: #fdf0f0; border: 1px solid var(--color-danger); color: var(--color-danger); }
+.alert-info  { background: #e8f0fe; border: 1px solid var(--color-accent); color: var(--color-accent); }
+.import-results { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 6px; padding: 20px; margin-bottom: 24px; }
+.import-results h2 { font-size: 16px; margin-bottom: 12px; }
+.results-table { border-collapse: collapse; width: 100%; }
+.results-table th, .results-table td { padding: 6px 12px; border: 1px solid var(--color-border); font-size: 14px; }
+.results-table th { background: #f5f5f5; text-align: left; width: 120px; }
+.import-warnings { margin-top: 12px; }
+.import-warnings h3 { font-size: 13px; color: var(--color-muted); margin-bottom: 6px; }
+.import-warnings ul { font-size: 13px; color: var(--color-danger); padding-left: 18px; }
+.section-divider { border: none; border-top: 1px solid var(--color-border); margin: 24px 0; }
+.import-form { display: flex; flex-direction: column; gap: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 4px; }
+.form-group label { font-size: 13px; font-weight: 500; }
+.form-group .required { color: var(--color-danger); }
+.form-control { padding: 6px 10px; border: 1px solid var(--color-border); border-radius: 4px; font-size: 14px; }
+.form-check label { font-size: 13px; display: flex; align-items: center; gap: 6px; font-weight: normal; }
+.form-actions { margin-top: 8px; }
+.export-section { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 6px; padding: 20px; margin-bottom: 20px; }
+.export-section h2 { font-size: 16px; margin-bottom: 8px; }
+.export-section p { font-size: 13px; color: var(--color-muted); margin-bottom: 12px; line-height: 1.6; }
+.export-actions { margin-bottom: 12px; }
+.export-notebook-filter { margin-top: 12px; }
+.export-notebook-filter summary { font-size: 13px; color: var(--color-accent); cursor: pointer; }
+.notebook-export-list { list-style: none; margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; }
 .save-status { font-size: 12px; color: var(--color-muted); height: 18px; }

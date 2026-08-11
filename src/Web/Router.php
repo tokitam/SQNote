@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace SQNote\Web;
 
 use SQNote\Container;
+use SQNote\Web\Controller\ExportController;
+use SQNote\Web\Controller\ImportController;
 use SQNote\Web\Controller\NotebookController;
 use SQNote\Web\Controller\NoteController;
 use SQNote\Web\Controller\NoteEditController;
@@ -78,5 +80,21 @@ class Router
         $this->add('POST', '#^/notes$#',                         fn($p) => $edit()->store());
         $this->add('GET',  '#^/notes/(?P<id>[^/]+)/edit$#',      fn($p) => $edit()->edit($p));
         $this->add('POST', '#^/notes/(?P<id>[^/]+)$#',           fn($p) => $edit()->update($p));
+
+        // インポート
+        $import = fn() => new ImportController(
+            $twig, $c->notebookRepository(), $c->tagRepository(), $c->notebookService(), $c->enexImporter()
+        );
+        $this->add('GET',  '#^/import$#', fn($p) => $import()->index());
+        $this->add('POST', '#^/import$#', fn($p) => $import()->store());
+
+        // エクスポート
+        $export = fn() => new ExportController(
+            $twig, $c->notebookRepository(), $c->tagRepository(), $c->exportService(), $c->config()
+        );
+        $this->add('GET', '#^/export$#',          fn($p) => $export()->index());
+        $this->add('GET', '#^/export/json$#',     fn($p) => $export()->downloadJson());
+        $this->add('GET', '#^/export/markdown$#', fn($p) => $export()->downloadMarkdown());
+        $this->add('GET', '#^/export/backup$#',   fn($p) => $export()->downloadBackup());
     }
 }
