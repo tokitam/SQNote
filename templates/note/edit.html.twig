@@ -22,7 +22,7 @@
       <input type="text" id="note-tags" placeholder="タグ（カンマ区切り）" value="{{ note ? note.tags|join(', ') : '' }}">
     </div>
     <div class="editor-actions">
-      <button class="btn btn-primary" onclick="saveNote()" id="save-btn">保存</button>
+      <button class="btn btn-primary" id="save-btn">保存</button>
       <a href="{{ note ? '/notes/' ~ note.id : '/' }}" class="btn">キャンセル</a>
     </div>
   </div>
@@ -84,16 +84,9 @@
   </script>
 {% endif %}
 <script>
-  const NOTE_ID     = {{ note ? '"' ~ note.id ~ '"' : 'null' }};
-  const tagInput    = document.getElementById('note-tags');
-
-  // タグ入力欄に datalist を紐付け
+  const NOTE_ID  = {{ note ? '"' ~ note.id ~ '"' : 'null' }};
+  const tagInput = document.getElementById('note-tags');
   tagInput.setAttribute('list', 'tag-suggestions');
-
-  // Cmd+S / Ctrl+S で保存
-  document.addEventListener('keydown', e => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveNote(); }
-  });
 
   async function saveNote() {
     const btn = document.getElementById('save-btn');
@@ -137,5 +130,10 @@
       btn.disabled = false;
     }
   }
+
+  document.getElementById('save-btn').addEventListener('click', saveNote);
+  document.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveNote(); }
+  });
 </script>
 {% endblock %}
