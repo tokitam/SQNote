@@ -10,6 +10,7 @@ use SQNote\Repository\AttachmentRepository;
 use SQNote\Repository\NoteRepository;
 use SQNote\Repository\NotebookRepository;
 use SQNote\Repository\TagRepository;
+use SQNote\Importer\EnexImporter;
 use SQNote\Service\ExportService;
 use SQNote\Service\NoteService;
 use SQNote\Service\NotebookService;
@@ -82,6 +83,15 @@ class Container
         return $this->instances['exportService'] ??= new ExportService(
             $this->noteRepository(),
             $this->attachmentRepository(),
+        );
+    }
+
+    public function enexImporter(): EnexImporter
+    {
+        return $this->instances['enexImporter'] ??= new EnexImporter(
+            $this->noteService(),
+            $this->noteRepository(),
+            $this->pdo(),
         );
     }
 
