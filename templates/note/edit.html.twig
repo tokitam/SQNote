@@ -32,10 +32,10 @@
     <input type="hidden" id="content-type" value="html">
     <div id="editor-quill">{{ note.content|raw }}</div>
   {% else %}
-    {# CodeMirror Markdown エディタ（デフォルト） #}
+    {# Markdown エディタ: textarea をフォールバックとして常に表示し、CodeMirror が読み込めた場合に置き換える #}
     <input type="hidden" id="content-type" value="markdown">
-    <textarea id="editor-md" style="display:none">{{ note ? note.content : '' }}</textarea>
-    <div id="editor-cm" class="editor-cm"></div>
+    <textarea id="editor-md" class="editor-cm" style="width:100%;box-sizing:border-box;padding:8px;font-family:monospace;font-size:14px;line-height:1.6;resize:vertical;border:1px solid var(--color-border);border-radius:4px;">{{ note ? note.content : '' }}</textarea>
+    <div id="editor-cm" class="editor-cm" style="display:none"></div>
   {% endif %}
 
   <div id="save-status" class="save-status"></div>
@@ -61,16 +61,26 @@
   </script>
 {% else %}
   <script type="module">
-    import { EditorView, basicSetup } from 'https://esm.sh/codemirror@6';
-    import { markdown } from 'https://esm.sh/@codemirror/lang-markdown@6';
+    try {
+      const { EditorView, basicSetup } = await import('https://esm.sh/codemirror@6');
+      const { markdown } = await import('https://esm.sh/@codemirror/lang-markdown@6');
 
-    const initialContent = document.getElementById('editor-md').value;
-    const view = new EditorView({
-      doc: initialContent,
-      extensions: [basicSetup, markdown()],
-      parent: document.getElementById('editor-cm'),
-    });
-    window._editor = { getContent: () => view.state.doc.toString() };
+      const ta = document.getElementById('editor-md');
+      const cm = document.getElementById('editor-cm');
+      const view = new EditorView({
+        doc: ta.value,
+        extensions: [basicSetup, markdown()],
+        parent: cm,
+      });
+      // CodeMirror が正常に起動したら textarea を隠して CodeMirror を表示
+      ta.style.display = 'none';
+      cm.style.display  = '';
+      window._editor = { getContent: () => view.state.doc.toString() };
+    } catch (e) {
+      // CDN が読み込めない場合は textarea をそのまま使う
+      console.warn('CodeMirror の読み込みに失敗しました。テキストエリアで入力できます。', e);
+      window._editor = { getContent: () => document.getElementById('editor-md').value };
+    }
   </script>
 {% endif %}
 <script>
