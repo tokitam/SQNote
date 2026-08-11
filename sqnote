@@ -5,6 +5,6 @@ declare(strict_types=1);
 
 require __DIR__ . '/vendor/autoload.php';
 
-// CLI コマンドは各 issue で追加する（#10: import:enex）
 $app = new \Symfony\Component\Console\Application('SQNote', '1.0.0');
+$app->add(new \SQNote\Cli\ImportCommand());
 $app->run();
