@@ -22,7 +22,7 @@
       <input type="text" id="note-tags" placeholder="タグ（カンマ区切り）" value="{{ note ? note.tags|join(', ') : '' }}">
     </div>
     <div class="editor-actions">
-      <button class="btn btn-primary" id="save-btn">保存</button>
+      <button class="btn btn-primary" id="save-btn" data-note-id="{{ note ? note.id : '' }}">保存</button>
       <a href="{{ note ? '/notes/' ~ note.id : '/' }}" class="btn">キャンセル</a>
     </div>
   </div>
@@ -62,29 +62,27 @@
 {% else %}
   <script type="module">
     try {
-      const { EditorView, basicSetup } = await import('https://esm.sh/codemirror@6');
-      const { markdown } = await import('https://esm.sh/@codemirror/lang-markdown@6');
+      const cm    = await import('https://esm.sh/codemirror@6?bundle');
+      const mdPkg = await import('https://esm.sh/@codemirror/lang-markdown@6?bundle');
 
-      const ta = document.getElementById('editor-md');
-      const cm = document.getElementById('editor-cm');
-      const view = new EditorView({
+      const ta   = document.getElementById('editor-md');
+      const cmEl = document.getElementById('editor-cm');
+      const view = new cm.EditorView({
         doc: ta.value,
-        extensions: [basicSetup, markdown()],
-        parent: cm,
+        extensions: [cm.basicSetup, mdPkg.markdown()],
+        parent: cmEl,
       });
-      // CodeMirror が正常に起動したら textarea を隠して CodeMirror を表示
-      ta.style.display = 'none';
-      cm.style.display  = '';
+      ta.style.display   = 'none';
+      cmEl.style.display = '';
       window._editor = { getContent: () => view.state.doc.toString() };
     } catch (e) {
-      // CDN が読み込めない場合は textarea をそのまま使う
       console.warn('CodeMirror の読み込みに失敗しました。テキストエリアで入力できます。', e);
       window._editor = { getContent: () => document.getElementById('editor-md').value };
     }
   </script>
 {% endif %}
 <script>
-  const NOTE_ID  = {{ note ? '"' ~ note.id ~ '"' : 'null' }};
+  const NOTE_ID  = document.getElementById('save-btn').dataset.noteId || null;
   const tagInput = document.getElementById('note-tags');
   tagInput.setAttribute('list', 'tag-suggestions');
 
