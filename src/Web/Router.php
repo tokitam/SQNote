@@ -7,6 +7,7 @@ namespace SQNote\Web;
 use SQNote\Container;
 use SQNote\Web\Controller\NotebookController;
 use SQNote\Web\Controller\NoteController;
+use SQNote\Web\Controller\NoteEditController;
 use SQNote\Web\Controller\TagController;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
@@ -53,6 +54,9 @@ class Router
         $note = fn() => new NoteController(
             $twig, $c->noteRepository(), $c->notebookRepository(), $c->tagRepository()
         );
+        $edit = fn() => new NoteEditController(
+            $twig, $c->noteRepository(), $c->notebookRepository(), $c->tagRepository(), $c->noteService()
+        );
         $nb = fn() => new NotebookController(
             $twig, $c->noteRepository(), $c->notebookRepository(), $c->tagRepository()
         );
@@ -60,12 +64,19 @@ class Router
             $twig, $c->noteRepository(), $c->notebookRepository(), $c->tagRepository()
         );
 
-        $this->add('GET', '#^/$#',                              fn($p) => $note()->index());
-        $this->add('GET', '#^/search$#',                        fn($p) => $note()->search());
-        $this->add('GET', '#^/notes/(?P<id>[^/]+)$#',           fn($p) => $note()->show($p));
-        $this->add('GET', '#^/notebooks$#',                     fn($p) => $nb()->index());
-        $this->add('GET', '#^/notebooks/(?P<id>[^/]+)$#',       fn($p) => $nb()->show($p));
-        $this->add('GET', '#^/tags$#',                          fn($p) => $tag()->index());
-        $this->add('GET', '#^/tags/(?P<name>[^/]+)$#',          fn($p) => $tag()->show($p));
+        // 閲覧
+        $this->add('GET',  '#^/$#',                              fn($p) => $note()->index());
+        $this->add('GET',  '#^/search$#',                        fn($p) => $note()->search());
+        $this->add('GET',  '#^/notes/(?P<id>[^/]+)$#',           fn($p) => $note()->show($p));
+        $this->add('GET',  '#^/notebooks$#',                     fn($p) => $nb()->index());
+        $this->add('GET',  '#^/notebooks/(?P<id>[^/]+)$#',       fn($p) => $nb()->show($p));
+        $this->add('GET',  '#^/tags$#',                          fn($p) => $tag()->index());
+        $this->add('GET',  '#^/tags/(?P<name>[^/]+)$#',          fn($p) => $tag()->show($p));
+
+        // 作成・編集
+        $this->add('GET',  '#^/notes/new$#',                     fn($p) => $edit()->create());
+        $this->add('POST', '#^/notes$#',                         fn($p) => $edit()->store());
+        $this->add('GET',  '#^/notes/(?P<id>[^/]+)/edit$#',      fn($p) => $edit()->edit($p));
+        $this->add('POST', '#^/notes/(?P<id>[^/]+)$#',           fn($p) => $edit()->update($p));
     }
 }
