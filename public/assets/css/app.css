@@ -43,6 +43,7 @@ a:hover { text-decoration: underline; }
 .note-item-link { display: block; padding: 12px 8px; color: var(--color-text); }
 .note-item-link:hover { background: #f5f5f5; text-decoration: none; }
 .note-item-title { font-size: 15px; font-weight: 500; margin-bottom: 4px; }
+.note-item-excerpt { font-size: 12px; color: var(--color-muted); margin: 2px 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .note-item-meta { font-size: 12px; color: var(--color-muted); }
 .note-item-meta .tag { background: #e8f0fe; color: var(--color-accent); border-radius: 3px; padding: 1px 5px; margin-right: 4px; }
 .note-item-meta .notebook { margin-right: 8px; }

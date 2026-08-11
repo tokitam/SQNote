@@ -6,6 +6,9 @@
       <li class="note-item">
         <a href="/notes/{{ note.id }}" class="note-item-link">
           <div class="note-item-title">{{ note.title ?: '(無題)' }}</div>
+          {% if note.excerpt %}
+            <div class="note-item-excerpt">{{ note.excerpt|striptags|slice(0, 120) }}</div>
+          {% endif %}
           <div class="note-item-meta">
             {% for tag in note.tags %}<span class="tag">#{{ tag }}</span>{% endfor %}
             <span class="date">{{ note.updated_at|slice(0,10) }}</span>

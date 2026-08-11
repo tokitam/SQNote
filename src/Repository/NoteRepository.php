@@ -41,7 +41,8 @@ class NoteRepository extends AbstractRepository
 
         $whereSql = implode(' AND ', $where);
         $sql = "SELECT n.id, n.title, n.notebook_id, nb.name AS notebook_name,
-                       n.content_type, n.source_url, n.created_at, n.updated_at
+                       n.content_type, n.source_url, n.created_at, n.updated_at,
+                       SUBSTR(n.content, 1, 200) AS excerpt
                 FROM notes n
                 LEFT JOIN notebooks nb ON nb.id = n.notebook_id
                 WHERE {$whereSql}
