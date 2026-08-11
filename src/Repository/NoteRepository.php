@@ -272,6 +272,7 @@ class NoteRepository extends AbstractRepository
     private function formatList(array $row, array $tagMap, array $attMap): array
     {
         return array_merge($this->formatBase($row), [
+            'excerpt'         => $row['excerpt'] ?? '',
             'tags'            => $tagMap[$row['id']] ?? [],
             'has_attachments' => isset($attMap[$row['id']]),
         ]);
