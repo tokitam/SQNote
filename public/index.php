@@ -21,7 +21,6 @@ if (str_starts_with($uri, '/api/v1')) {
     $router  = new \SQNote\Api\Router($container);
     $router->dispatch($method, $apiPath);
 } else {
-    // Web ルーター（#8 で実装）
-    http_response_code(501);
-    echo '<h1>SQNote</h1><p>Web UI not yet implemented.</p>';
+    $router = new \SQNote\Web\Router($container);
+    $router->dispatch($method, $uri);
 }

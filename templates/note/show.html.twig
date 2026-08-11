@@ -1,0 +1,56 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}{{ note.title ?: '(無題)' }} — SQNote{% endblock %}
+
+{% block content %}
+<article class="note-detail">
+  <header class="note-detail-header">
+    <h1>{{ note.title ?: '(無題)' }}</h1>
+    <div class="note-detail-meta">
+      {% if note.notebook_name %}
+        <span class="notebook"><a href="/notebooks/{{ note.notebook_id }}">{{ note.notebook_name }}</a></span>
+      {% endif %}
+      {% for tag in note.tags %}
+        <span class="tag"><a href="/tags/{{ tag|url_encode }}">#{{ tag }}</a></span>
+      {% endfor %}
+      <span class="date">更新: {{ note.updated_at|slice(0,10) }}</span>
+      {% if note.source_url %}
+        <a href="{{ note.source_url }}" class="source-url" target="_blank" rel="noopener">元記事</a>
+      {% endif %}
+    </div>
+    <div class="note-detail-actions">
+      <a href="/notes/{{ note.id }}/edit" class="btn">編集</a>
+      <button class="btn btn-danger" onclick="deleteNote('{{ note.id }}')">削除</button>
+    </div>
+  </header>
+
+  <div class="note-body">
+    {{ note.content_html|raw }}
+  </div>
+
+  {% if note.attachments is not empty %}
+    <section class="note-attachments">
+      <h3>添付ファイル</h3>
+      <ul>
+        {% for att in note.attachments %}
+          <li>
+            {% if att.mime_type starts with 'image/' %}
+              <img src="/api/v1/attachments/{{ att.id }}" alt="{{ att.filename }}" class="attachment-image">
+            {% else %}
+              <a href="/api/v1/attachments/{{ att.id }}" download="{{ att.filename }}">{{ att.filename }}</a>
+            {% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  {% endif %}
+</article>
+
+<script>
+async function deleteNote(id) {
+  if (!confirm('このノートを削除しますか？')) return;
+  const res = await fetch('/api/v1/notes/' + id, { method: 'DELETE' });
+  if (res.ok) window.location.href = '/';
+}
+</script>
+{% endblock %}
