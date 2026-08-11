@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}SQNote{% endblock %}</title>
+  <link rel="stylesheet" href="/assets/css/app.css">
+  {% block head %}{% endblock %}
+</head>
+<body>
+  <header class="app-header">
+    <a href="/" class="app-logo">SQNote</a>
+    <form class="search-form" action="/search" method="get">
+      <input type="search" name="q" placeholder="検索..." value="{{ q ?? '' }}">
+    </form>
+    <nav class="header-nav">
+      <a href="/import">インポート</a>
+      <a href="/export">エクスポート</a>
+    </nav>
+  </header>
+
+  <div class="app-body">
+    <nav class="sidebar">
+      <section class="sidebar-section">
+        <h3><a href="/">すべてのノート</a></h3>
+      </section>
+      <section class="sidebar-section">
+        <h3>ノートブック</h3>
+        <ul>
+          {% for nb in notebooks %}
+            <li>
+              <a href="/notebooks/{{ nb.id }}" class="{{ active_notebook is defined and active_notebook == nb.id ? 'active' : '' }}">
+                {{ nb.name }} <span class="count">{{ nb.note_count }}</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+      <section class="sidebar-section">
+        <h3>タグ</h3>
+        <ul>
+          {% for tag in tags %}
+            <li>
+              <a href="/tags/{{ tag.name|url_encode }}" class="{{ active_tag is defined and active_tag == tag.name ? 'active' : '' }}">
+                {{ tag.name }} <span class="count">{{ tag.note_count }}</span>
+              </a>
+            </li>
+          {% endfor %}
+        </ul>
+      </section>
+    </nav>
+
+    <main class="main-content">
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,55 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}
+  {% if q is defined and q %}「{{ q }}」の検索結果
+  {% elseif active_tag is defined %}#{{ active_tag }}
+  {% else %}すべてのノート
+  {% endif %} — SQNote
+{% endblock %}
+
+{% block content %}
+<div class="note-list-header">
+  <h2>
+    {% if q is defined and q %}「{{ q }}」の検索結果 ({{ total }}件)
+    {% elseif active_tag is defined %}#{{ active_tag }} ({{ total }}件)
+    {% else %}すべてのノート ({{ total }}件)
+    {% endif %}
+  </h2>
+  <a href="/notes/new" class="btn btn-primary">+ 新規ノート</a>
+</div>
+
+{% if notes is empty %}
+  <p class="empty">ノートがありません。</p>
+{% else %}
+  <ul class="note-list">
+    {% for note in notes %}
+      <li class="note-item">
+        <a href="/notes/{{ note.id }}" class="note-item-link">
+          <div class="note-item-title">{{ note.title ?: '(無題)' }}</div>
+          <div class="note-item-meta">
+            {% if note.notebook_name %}
+              <span class="notebook">{{ note.notebook_name }}</span>
+            {% endif %}
+            {% for tag in note.tags %}
+              <span class="tag">#{{ tag }}</span>
+            {% endfor %}
+            <span class="date">{{ note.updated_at|slice(0,10) }}</span>
+          </div>
+        </a>
+      </li>
+    {% endfor %}
+  </ul>
+
+  {% if pages > 1 %}
+    <nav class="pagination">
+      {% if page > 1 %}
+        <a href="?page={{ page - 1 }}{% if q is defined and q %}&q={{ q|url_encode }}{% endif %}">&laquo; 前</a>
+      {% endif %}
+      <span>{{ page }} / {{ pages }}</span>
+      {% if page < pages %}
+        <a href="?page={{ page + 1 }}{% if q is defined and q %}&q={{ q|url_encode }}{% endif %}">次 &raquo;</a>
+      {% endif %}
+    </nav>
+  {% endif %}
+{% endif %}
+{% endblock %}
