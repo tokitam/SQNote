@@ -114,7 +114,16 @@
     const method = NOTE_ID ? 'PUT' : 'POST';
 
     try {
-      const res  = await fetch(url, { method, body: JSON.stringify(body), headers: {'Content-Type':'application/json'} });
+      const res = await fetch(url, {
+        method,
+        credentials: 'same-origin',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        status.textContent = `保存失敗: HTTP ${res.status}`;
+        return;
+      }
       const data = await res.json();
       if (data.ok) {
         status.textContent = '保存しました';
