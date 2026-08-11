@@ -115,8 +115,10 @@ SQNOTE_BASIC_PASS=your-basic-auth-password
 ```bash
 # .env を読み込んでから起動
 export $(grep -v '^#' .env | xargs)
-php -S localhost:8080 -t public
+php -S localhost:8080 -t public public/index.php
 ```
+
+> `public/index.php` をルータースクリプトとして指定することで、すべてのリクエストが `index.php` 経由になります。末尾を省略すると `.htaccess` の RewriteRule が効かず、`/notes/new` などで 404 になります。
 
 ブラウザで `http://localhost:8080` を開くと BASIC 認証が表示されます。
 
