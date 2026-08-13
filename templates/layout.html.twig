@@ -9,6 +9,7 @@
 </head>
 <body>
   <header class="app-header">
+    <button class="sidebar-toggle" aria-label="メニューを開く">&#9776;</button>
     <a href="/" class="app-logo">SQNote</a>
     <form class="search-form" action="/search" method="get">
       <input type="search" name="q" placeholder="検索..." value="{{ q ?? '' }}">
@@ -20,6 +21,7 @@
   </header>
 
   <div class="app-body">
+    <div class="sidebar-overlay"></div>
     <nav class="sidebar">
       <section class="sidebar-section">
         <h3><a href="/">すべてのノート</a></h3>
@@ -54,6 +56,27 @@
       {% block content %}{% endblock %}
     </main>
   </div>
+
+  <script>
+    const toggle = document.querySelector('.sidebar-toggle');
+    const sidebar = document.querySelector('.sidebar');
+    const overlay = document.querySelector('.sidebar-overlay');
+
+    function openSidebar() {
+      sidebar.classList.add('is-open');
+      overlay.classList.add('is-visible');
+    }
+    function closeSidebar() {
+      sidebar.classList.remove('is-open');
+      overlay.classList.remove('is-visible');
+    }
+
+    toggle.addEventListener('click', openSidebar);
+    overlay.addEventListener('click', closeSidebar);
+
+    // サイドバー内のリンクをタップしたら閉じる（ページ遷移するため）
+    sidebar.querySelectorAll('a').forEach(a => a.addEventListener('click', closeSidebar));
+  </script>
 
   {% block scripts %}{% endblock %}
 </body>
