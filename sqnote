@@ -5,6 +5,8 @@ declare(strict_types=1);
 
 require __DIR__ . '/vendor/autoload.php';
 
+\Dotenv\Dotenv::createUnsafeImmutable(__DIR__)->safeLoad();
+
 $app = new \Symfony\Component\Console\Application('SQNote', '1.0.0');
 $app->add(new \SQNote\Cli\ImportCommand());
 $app->run();

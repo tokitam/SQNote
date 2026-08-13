@@ -12,6 +12,8 @@ if (PHP_SAPI === 'cli-server') {
 
 require __DIR__ . '/../vendor/autoload.php';
 
+\Dotenv\Dotenv::createUnsafeImmutable(__DIR__ . '/..')->safeLoad();
+
 $config    = require __DIR__ . '/../config/config.php';
 $container = new \SQNote\Container($config);
 

@@ -19,7 +19,12 @@ class NoteService
 
     public function create(array $data): string
     {
-        $this->pdo->beginTransaction();
+        // 既に外側のトランザクション内（一括インポート等）で呼ばれる場合は
+        // それに参加し、自分でネストした beginTransaction はしない（PDO は非対応）。
+        $ownsTransaction = !$this->pdo->inTransaction();
+        if ($ownsTransaction) {
+            $this->pdo->beginTransaction();
+        }
         try {
             $noteId = $this->notes->create([
                 'title'        => $data['title'] ?? '',
@@ -39,17 +44,24 @@ class NoteService
                 $this->notes->attachTag($noteId, $tagId);
             }
 
-            $this->pdo->commit();
+            if ($ownsTransaction) {
+                $this->pdo->commit();
+            }
             return $noteId;
         } catch (\Throwable $e) {
-            $this->pdo->rollBack();
+            if ($ownsTransaction) {
+                $this->pdo->rollBack();
+            }
             throw $e;
         }
     }
 
     public function update(string $id, array $data): void
     {
-        $this->pdo->beginTransaction();
+        $ownsTransaction = !$this->pdo->inTransaction();
+        if ($ownsTransaction) {
+            $this->pdo->beginTransaction();
+        }
         try {
             $updateFields = array_intersect_key($data, array_flip([
                 'title', 'content', 'content_type', 'notebook_id', 'source_url',
@@ -69,9 +81,13 @@ class NoteService
                 }
             }
 
-            $this->pdo->commit();
+            if ($ownsTransaction) {
+                $this->pdo->commit();
+            }
         } catch (\Throwable $e) {
-            $this->pdo->rollBack();
+            if ($ownsTransaction) {
+                $this->pdo->rollBack();
+            }
             throw $e;
         }
     }

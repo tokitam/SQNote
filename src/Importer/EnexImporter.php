@@ -25,20 +25,37 @@ class EnexImporter
             throw new \InvalidArgumentException("ファイルが見つかりません: {$enexPath}");
         }
 
-        libxml_use_internal_errors(true);
-        $xml = simplexml_load_file($enexPath);
-        if ($xml === false) {
-            $err = libxml_get_last_error();
-            throw new \RuntimeException('enex ファイルのパースに失敗しました: ' . ($err ? $err->message : '不明なエラー'));
+        // 巨大な .enex（数GB級、添付ファイルの Base64 を含む）を一括で
+        // メモリに展開すると OOM を招くため、XMLReader でストリーミング処理する。
+        $reader = new \XMLReader();
+        if (!$reader->open($enexPath, null, LIBXML_PARSEHUGE)) {
+            throw new \RuntimeException("enex ファイルを開けませんでした: {$enexPath}");
         }
 
         $results = ['imported' => 0, 'skipped' => 0, 'errors' => 0, 'total' => 0, 'warnings' => []];
 
         $this->pdo->beginTransaction();
         try {
-            foreach ($xml->note as $noteEl) {
+            while ($reader->read()) {
+                if ($reader->nodeType !== \XMLReader::ELEMENT || $reader->name !== 'note') {
+                    continue;
+                }
+
+                $noteXml = $reader->readOuterXML();
+                libxml_use_internal_errors(true);
+                $noteEl = simplexml_load_string($noteXml, \SimpleXMLElement::class, LIBXML_PARSEHUGE);
+                if ($noteEl === false) {
+                    $err = libxml_get_last_error();
+                    libxml_clear_errors();
+                    $results['errors']++;
+                    $results['warnings'][] = 'ノートのパースに失敗しました: ' . ($err ? $err->message : '不明なエラー');
+                    $reader->next();
+                    continue;
+                }
+
                 $results['total']++;
                 $this->processNote($noteEl, $notebookId, $options, $results);
+                $reader->next();
             }
             if ($options['dry_run'] ?? false) {
                 $this->pdo->rollBack();
@@ -48,6 +65,8 @@ class EnexImporter
         } catch (\Throwable $e) {
             $this->pdo->rollBack();
             throw $e;
+        } finally {
+            $reader->close();
         }
 
         return $results;
