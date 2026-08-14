@@ -26,11 +26,34 @@ if (!$auth->check()) {
     $auth->challenge(str_starts_with($uri, '/api/'));
 }
 
-if (str_starts_with($uri, '/api/v1')) {
-    $apiPath = preg_replace('#^/api/v1#', '', $uri) ?: '/';
-    $router  = new \SQNote\Api\Router($container);
-    $router->dispatch($method, $apiPath);
-} else {
-    $router = new \SQNote\Web\Router($container);
-    $router->dispatch($method, $uri);
+try {
+    if (str_starts_with($uri, '/api/v1')) {
+        $apiPath = preg_replace('#^/api/v1#', '', $uri) ?: '/';
+        $router  = new \SQNote\Api\Router($container);
+        $router->dispatch($method, $apiPath);
+    } else {
+        $router = new \SQNote\Web\Router($container);
+        $router->dispatch($method, $uri);
+    }
+} catch (\Throwable $e) {
+    if (!\SQNote\Support\DiskFull::isCausedBy($e)) {
+        throw $e;
+    }
+
+    $freeBytes = \SQNote\Support\DiskFull::freeBytes($config['db']['path']);
+    http_response_code(507);
+
+    if (str_starts_with($uri, '/api/')) {
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode([
+            'ok'    => false,
+            'error' => [
+                'code'       => 'DISK_FULL',
+                'message'    => 'サーバーのディスク容量が不足しているため、保存できませんでした。',
+                'free_bytes' => $freeBytes,
+            ],
+        ]);
+    } else {
+        echo \SQNote\Support\DiskFull::renderHtml($freeBytes);
+    }
 }
