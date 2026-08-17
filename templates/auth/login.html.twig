@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ログイン — SQNote</title>
+  <link rel="stylesheet" href="/assets/css/app.css">
+</head>
+<body class="login-page">
+  <div class="login-card">
+    <h1 class="login-title">SQNote</h1>
+
+    {% if error %}
+      <div class="alert alert-error">{{ error }}</div>
+    {% endif %}
+
+    <form class="login-form" method="post" action="/login">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="redirect_to" value="{{ redirect_to }}">
+
+      <div class="form-group">
+        <label for="user">ユーザー名</label>
+        <input type="text" id="user" name="user" class="form-control" autocomplete="username" required autofocus>
+      </div>
+
+      <div class="form-group">
+        <label for="pass">パスワード</label>
+        <input type="password" id="pass" name="pass" class="form-control" autocomplete="current-password" required>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block">ログイン</button>
+    </form>
+  </div>
+</body>
+</html>
