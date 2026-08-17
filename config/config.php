@@ -11,4 +11,8 @@ return [
         'user' => getenv('SQNOTE_BASIC_USER') ?: 'admin',
         'pass' => getenv('SQNOTE_BASIC_PASS') ?: '',
     ],
+    'session' => [
+        'lifetime' => (int)(getenv('SQNOTE_SESSION_LIFETIME') ?: 604800),
+        'name'     => 'sqnote_sess',
+    ],
 ];

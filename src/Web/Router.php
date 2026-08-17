@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace SQNote\Web;
 
+use SQNote\Auth\SessionAuth;
 use SQNote\Container;
+use SQNote\Web\Controller\AuthController;
 use SQNote\Web\Controller\ExportController;
 use SQNote\Web\Controller\ImportController;
 use SQNote\Web\Controller\NotebookController;
@@ -19,7 +21,7 @@ class Router
     private array $routes = [];
     private Environment $twig;
 
-    public function __construct(private Container $container)
+    public function __construct(private Container $container, private ?SessionAuth $sessionAuth = null)
     {
         $loader     = new FilesystemLoader(dirname(__DIR__, 2) . '/templates');
         $this->twig = new Environment($loader, ['cache' => false]);
@@ -52,6 +54,14 @@ class Router
     {
         $c    = $this->container;
         $twig = $this->twig;
+
+        // 認証ルート
+        $authCfg = $c->config()['auth'];
+        $session = $this->sessionAuth ?? new SessionAuth();
+        $auth = fn() => new AuthController($twig, $session, $authCfg);
+        $this->add('GET',  '#^/login$#',  fn($p) => $auth()->loginForm());
+        $this->add('POST', '#^/login$#',  fn($p) => $auth()->loginPost());
+        $this->add('GET',  '#^/logout$#', fn($p) => $auth()->logout());
 
         $note = fn() => new NoteController(
             $twig, $c->noteRepository(), $c->notebookRepository(), $c->tagRepository()

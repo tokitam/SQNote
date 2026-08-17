@@ -20,10 +20,24 @@ $container = new \SQNote\Container($config);
 $uri    = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 
-// BASIC 認証
-$auth = new \SQNote\Auth\BasicAuth($config['auth']['user'], $config['auth']['pass']);
-if (!$auth->check()) {
-    $auth->challenge(str_starts_with($uri, '/api/'));
+// セッション認証を開始（出力前に必要）
+$sessionAuth = new \SQNote\Auth\SessionAuth();
+$sessionAuth->start($config['session']);
+
+// 認証チェック: セッション → BASIC 認証の順で試みる
+$basicAuth      = new \SQNote\Auth\BasicAuth($config['auth']['user'], $config['auth']['pass']);
+$isApi          = str_starts_with($uri, '/api/');
+$isAuthRoute    = in_array($uri, ['/login', '/logout'], true);
+$isAuthenticated = $sessionAuth->isAuthenticated() || $basicAuth->check();
+
+if (!$isAuthenticated) {
+    if ($isApi) {
+        $basicAuth->challenge(true);
+    } elseif (!$isAuthRoute) {
+        $redirectTo = urlencode($uri);
+        header('Location: /login?redirect_to=' . $redirectTo);
+        exit;
+    }
 }
 
 try {
@@ -32,7 +46,7 @@ try {
         $router  = new \SQNote\Api\Router($container);
         $router->dispatch($method, $apiPath);
     } else {
-        $router = new \SQNote\Web\Router($container);
+        $router = new \SQNote\Web\Router($container, $sessionAuth);
         $router->dispatch($method, $uri);
     }
 } catch (\Throwable $e) {
