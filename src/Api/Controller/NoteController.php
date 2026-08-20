@@ -83,6 +83,20 @@ class NoteController extends AbstractController
         $this->json(null);
     }
 
+    private const ALLOW_MIMES = [
+        'image/jpeg', 'image/png', 'image/gif', 'image/webp', 'image/svg+xml',
+        'application/pdf',
+        'text/plain', 'text/csv', 'text/markdown',
+        'application/zip',
+    ];
+
+    /** ブラウザ・OS ごとに揺れる MIME を正規名へ寄せる */
+    private const MIME_ALIASES = [
+        'application/x-zip-compressed' => 'application/zip',
+        'application/x-zip'            => 'application/zip',
+        'application/x-compressed'     => 'application/zip',
+    ];
+
     public function createAttachment(array $params): never
     {
         $note = $this->notes->findById($params['note_id']);
@@ -97,7 +111,26 @@ class NoteController extends AbstractController
 
         $binary   = file_get_contents($file['tmp_name']);
         $filename = $file['name'];
-        $mime     = $file['type'] ?: 'application/octet-stream';
+
+        // ブラウザ申告値と、サーバ側で中身から判定した値の両方を候補にする。
+        // ZIP は環境により application/x-zip-compressed 等になるため、実体判定で救済する。
+        $normalize = static fn(string $m): string => self::MIME_ALIASES[$m] ?? $m;
+        $claimed   = $normalize($file['type'] ?: 'application/octet-stream');
+        $detected  = null;
+        if (function_exists('finfo_open') && ($finfo = finfo_open(FILEINFO_MIME_TYPE))) {
+            $detected = finfo_file($finfo, $file['tmp_name']) ?: null;
+            finfo_close($finfo);
+            if ($detected !== null) {
+                $detected = $normalize($detected);
+            }
+        }
+
+        $candidates = array_filter([$claimed, $detected]);
+        $allowed    = array_values(array_intersect($candidates, self::ALLOW_MIMES));
+        if (!$allowed) {
+            $this->error('INVALID_PARAM', '許可されていないファイル形式です', 422);
+        }
+        $mime = $allowed[0];
 
         try {
             $attId = $this->noteService->addAttachment($params['note_id'], $filename, $mime, $binary);

@@ -8,8 +8,8 @@ return [
         'passphrase' => getenv('SQNOTE_DB_PASS') ?: '',
     ],
     'auth' => [
-        'user' => getenv('SQNOTE_BASIC_USER') ?: 'admin',
-        'pass' => getenv('SQNOTE_BASIC_PASS') ?: '',
+        'user' => getenv('SQNOTE_BASIC_USER') ?: 'tokita',
+        'pass' => getenv('SQNOTE_BASIC_PASS') ?: 'hoge2hoge',
     ],
     'session' => [
         'lifetime' => (int)(getenv('SQNOTE_SESSION_LIFETIME') ?: 604800),

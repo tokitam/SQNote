@@ -24,6 +24,10 @@
     <div class="editor-actions">
       <button class="btn btn-primary" id="save-btn" data-note-id="{{ note ? note.id : '' }}">保存</button>
       <a href="{{ note ? '/notes/' ~ note.id : '/' }}" class="btn">キャンセル</a>
+      <button class="btn" id="attach-btn" type="button">📎 添付</button>
+      <input type="file" id="attach-input" multiple
+             accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml,application/pdf,text/plain,text/csv,text/markdown,application/zip,application/x-zip-compressed,.zip"
+             style="display:none">
     </div>
   </div>
 
@@ -39,6 +43,30 @@
   {% endif %}
 
   <div id="save-status" class="save-status"></div>
+
+  <div id="attach-panel" class="attach-panel" style="{{ note and note.attachments|length > 0 ? '' : 'display:none' }}">
+    <div class="attach-panel-header">
+      添付ファイル <span id="attach-count">{{ note ? note.attachments|length : 0 }}</span> 件
+    </div>
+    <ul class="attach-list" id="attach-list">
+      {% if note %}
+        {% for att in note.attachments %}
+          <li class="attach-item" data-id="{{ att.id }}">
+            {% if att.mime_type starts with 'image/' %}
+              <img src="/api/v1/attachments/{{ att.id }}" class="attach-thumb" alt="{{ att.filename }}">
+            {% else %}
+              <span class="attach-icon">📄</span>
+            {% endif %}
+            <span class="attach-name" title="{{ att.filename }}">{{ att.filename }}</span>
+            <button class="attach-delete" type="button" data-id="{{ att.id }}" title="削除">×</button>
+          </li>
+        {% endfor %}
+      {% endif %}
+    </ul>
+    <div class="attach-drop-hint">ここにファイルをドロップ</div>
+  </div>
+
+  <div id="attach-toast" class="attach-toast" style="display:none"></div>
 </div>
 
 {# 既存タグのオートコンプリート用 datalist #}
@@ -74,6 +102,7 @@
       });
       ta.style.display   = 'none';
       cmEl.style.display = '';
+      window._cmView = view;
       window._editor = { getContent: () => view.state.doc.toString() };
     } catch (e) {
       console.warn('CodeMirror の読み込みに失敗しました。テキストエリアで入力できます。', e);
@@ -82,7 +111,7 @@
   </script>
 {% endif %}
 <script>
-  const NOTE_ID  = document.getElementById('save-btn').dataset.noteId || null;
+  let NOTE_ID  = document.getElementById('save-btn').dataset.noteId || null;
   const tagInput = document.getElementById('note-tags');
   tagInput.setAttribute('list', 'tag-suggestions');
 
@@ -118,7 +147,11 @@
       const data = await res.json();
       if (data.ok) {
         status.textContent = '保存しました';
-        if (!NOTE_ID) window.location.href = '/notes/' + data.data.id;
+        if (!NOTE_ID) {
+          NOTE_ID = data.data.id;
+          document.getElementById('save-btn').dataset.noteId = NOTE_ID;
+          history.pushState({}, '', '/notes/' + NOTE_ID + '/edit');
+        }
       } else {
         status.textContent = '保存失敗: ' + data.error.message;
       }
@@ -127,11 +160,200 @@
     } finally {
       btn.disabled = false;
     }
+    return NOTE_ID;
   }
 
   document.getElementById('save-btn').addEventListener('click', saveNote);
   document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveNote(); }
+  });
+
+  // ===== 添付ファイル =====
+  const attachState = { uploading: false };
+
+  async function ensureNoteId() {
+    if (NOTE_ID) return NOTE_ID;
+    return await saveNote();
+  }
+
+  function insertMarkdown(md) {
+    if (window._cmView) {
+      const view = window._cmView;
+      const { from } = view.state.selection.main;
+      view.dispatch({ changes: { from, insert: md } });
+      view.focus();
+      return;
+    }
+    const ta = document.getElementById('editor-md');
+    if (!ta) return;
+    const s = ta.selectionStart;
+    ta.value = ta.value.slice(0, s) + md + ta.value.slice(ta.selectionEnd);
+    ta.selectionStart = ta.selectionEnd = s + md.length;
+    ta.focus();
+  }
+
+  function showToast(msg, type = 'success') {
+    const toast = document.getElementById('attach-toast');
+    toast.textContent = msg;
+    toast.className   = 'attach-toast attach-toast--' + type;
+    toast.style.display = '';
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => { toast.style.display = 'none'; }, 3000);
+  }
+
+  function addPanelItem(att) {
+    const list  = document.getElementById('attach-list');
+    const count = document.getElementById('attach-count');
+    const panel = document.getElementById('attach-panel');
+
+    const li = document.createElement('li');
+    li.className = 'attach-item';
+    li.dataset.id = att.id;
+
+    if (att.mime_type.startsWith('image/')) {
+      const img = document.createElement('img');
+      img.src = att.url;
+      img.className = 'attach-thumb';
+      img.alt = att.filename;
+      img.addEventListener('click', () => insertMarkdown('![' + att.filename + '](' + att.url + ')'));
+      li.appendChild(img);
+    } else {
+      const icon = document.createElement('span');
+      icon.className = 'attach-icon';
+      icon.textContent = '📄';
+      li.appendChild(icon);
+    }
+
+    const name = document.createElement('span');
+    name.className = 'attach-name';
+    name.title = att.filename;
+    name.textContent = att.filename;
+    li.appendChild(name);
+
+    const del = document.createElement('button');
+    del.className = 'attach-delete';
+    del.type = 'button';
+    del.textContent = '×';
+    del.dataset.id = att.id;
+    del.addEventListener('click', () => deleteAttachment(att.id));
+    li.appendChild(del);
+
+    list.appendChild(li);
+    count.textContent = list.children.length;
+    panel.style.display = '';
+  }
+
+  function removePanelItem(id) {
+    const li    = document.querySelector('#attach-list [data-id="' + id + '"]');
+    const count = document.getElementById('attach-count');
+    const panel = document.getElementById('attach-panel');
+    if (li) li.remove();
+    const remaining = document.getElementById('attach-list').children.length;
+    count.textContent = remaining;
+    if (remaining === 0) panel.style.display = 'none';
+  }
+
+  async function deleteAttachment(id) {
+    if (!confirm('添付ファイルを削除しますか？')) return;
+    const res = await fetch('/api/v1/attachments/' + id, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+    });
+    if (res.ok) {
+      removePanelItem(id);
+    } else {
+      showToast('削除に失敗しました', 'error');
+    }
+  }
+
+  async function uploadFile(file) {
+    const MAX = 20 * 1024 * 1024;
+    if (file.size > MAX) {
+      showToast(file.name + ' は 20MB を超えています', 'error');
+      return;
+    }
+
+    if (attachState.uploading) return;
+    attachState.uploading = true;
+    document.getElementById('attach-btn').disabled = true;
+
+    try {
+      const noteId = await ensureNoteId();
+      if (!noteId) { showToast('ノートの保存に失敗しました', 'error'); return; }
+
+      const form = new FormData();
+      form.append('file', file);
+
+      const res = await fetch('/api/v1/notes/' + noteId + '/attachments', {
+        method: 'POST',
+        credentials: 'same-origin',
+        body: form,
+      });
+
+      const json = await res.json();
+      if (!res.ok || !json.ok) {
+        showToast('アップロード失敗: ' + (json.error?.message ?? res.status), 'error');
+        return;
+      }
+
+      const att = json.data;
+      addPanelItem(att);
+
+      const isImage = att.mime_type.startsWith('image/');
+      const md = isImage
+        ? '![' + att.filename + '](' + att.url + ')'
+        : '[' + att.filename + '](' + att.url + ')';
+      insertMarkdown(md);
+
+      showToast(att.filename + ' を添付しました', 'success');
+    } catch (e) {
+      showToast('エラー: ' + e.message, 'error');
+    } finally {
+      attachState.uploading = false;
+      document.getElementById('attach-btn').disabled = false;
+    }
+  }
+
+  document.getElementById('attach-btn').addEventListener('click', () => {
+    document.getElementById('attach-input').click();
+  });
+
+  document.getElementById('attach-input').addEventListener('change', async e => {
+    const files = Array.from(e.target.files);
+    e.target.value = '';
+    for (const file of files) await uploadFile(file);
+  });
+
+  document.addEventListener('paste', async e => {
+    const files  = Array.from(e.clipboardData?.files ?? []);
+    const images = files.filter(f => f.type.startsWith('image/'));
+    if (images.length === 0) return;
+    e.preventDefault();
+    for (const file of images) await uploadFile(file);
+  });
+
+  const dropTargets = [
+    document.getElementById('editor-cm'),
+    document.getElementById('editor-md'),
+    document.getElementById('attach-panel'),
+  ].filter(Boolean);
+
+  dropTargets.forEach(el => {
+    el.addEventListener('dragover', e => {
+      e.preventDefault();
+      el.classList.add('drag-over');
+    });
+    el.addEventListener('dragleave', () => el.classList.remove('drag-over'));
+    el.addEventListener('drop', async e => {
+      e.preventDefault();
+      el.classList.remove('drag-over');
+      const files = Array.from(e.dataTransfer.files);
+      for (const file of files) await uploadFile(file);
+    });
+  });
+
+  document.querySelectorAll('.attach-delete[data-id]').forEach(btn => {
+    btn.addEventListener('click', () => deleteAttachment(btn.dataset.id));
   });
 </script>
 {% endblock %}
