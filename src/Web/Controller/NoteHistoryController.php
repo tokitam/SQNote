@@ -39,4 +39,28 @@ class NoteHistoryController extends AbstractController
             'tags'      => $this->tags->findAll(),
         ]);
     }
+
+    public function diff(array $params): never
+    {
+        $note = $this->notes->findById($params['id']);
+        if (!$note) {
+            http_response_code(404);
+            echo '<h1>404 Not Found</h1>';
+            exit;
+        }
+
+        $history = $this->noteHistory->findById($params['hid']);
+        if (!$history || $history['note_id'] !== $params['id']) {
+            http_response_code(404);
+            echo '<h1>404 Not Found</h1>';
+            exit;
+        }
+
+        $this->render('note/diff.html.twig', [
+            'note'      => $note,
+            'history'   => $history,
+            'notebooks' => $this->notebooks->findAll(),
+            'tags'      => $this->tags->findAll(),
+        ]);
+    }
 }

@@ -30,6 +30,7 @@
             <td>{{ h.title ?: '(無題)' }}</td>
             <td>{{ h.saved_at|slice(0, 19)|replace({'T': ' '}) }}</td>
             <td>
+              <a href="/notes/{{ note.id }}/history/{{ h.id }}/diff" class="btn btn-sm">差分</a>
               <button class="btn btn-sm"
                       onclick="restoreHistory('{{ note.id }}', '{{ h.id }}', {{ h.version }})">
                 このバージョンへ戻す
