@@ -8,6 +8,7 @@ use SQNote\Api\Controller\AttachmentController;
 use SQNote\Api\Controller\ExportController;
 use SQNote\Api\Controller\HealthController;
 use SQNote\Api\Controller\NoteController;
+use SQNote\Api\Controller\NoteHistoryController;
 use SQNote\Api\Controller\NotebookController;
 use SQNote\Api\Controller\TagController;
 use SQNote\Container;
@@ -70,6 +71,14 @@ class Router
         $this->add('POST',   '#^/notes/(?P<note_id>[^/]+)/attachments$#',
             fn($p) => $note()->createAttachment($p)
         );
+
+        // ノート履歴
+        $hist = fn() => new NoteHistoryController(
+            $c->noteRepository(), $c->noteHistoryRepository(), $c->noteService()
+        );
+        $this->add('GET',  '#^/notes/(?P<id>[^/]+)/history$#',                          fn($p) => $hist()->index($p));
+        $this->add('GET',  '#^/notes/(?P<id>[^/]+)/history/(?P<hid>[^/]+)$#',           fn($p) => $hist()->show($p));
+        $this->add('POST', '#^/notes/(?P<id>[^/]+)/history/(?P<hid>[^/]+)/restore$#',   fn($p) => $hist()->restore($p));
 
         // タグ
         $tag = fn() => new TagController($c->tagRepository());

@@ -1,0 +1,59 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}履歴 — {{ note.title ?: '(無題)' }} — SQNote{% endblock %}
+
+{% block content %}
+<article class="note-history">
+  <header class="note-detail-header">
+    <h1>履歴: {{ note.title ?: '(無題)' }}</h1>
+    <div class="note-detail-actions">
+      <a href="/notes/{{ note.id }}" class="btn">← ノートへ戻る</a>
+    </div>
+  </header>
+
+  {% if history is empty %}
+    <p class="empty-message">まだ履歴がありません。ノートを更新すると履歴が記録されます。</p>
+  {% else %}
+    <table class="history-table">
+      <thead>
+        <tr>
+          <th>バージョン</th>
+          <th>タイトル</th>
+          <th>保存日時</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for h in history %}
+          <tr>
+            <td>v{{ h.version }}</td>
+            <td>{{ h.title ?: '(無題)' }}</td>
+            <td>{{ h.saved_at|slice(0, 19)|replace({'T': ' '}) }}</td>
+            <td>
+              <button class="btn btn-sm"
+                      onclick="restoreHistory('{{ note.id }}', '{{ h.id }}', {{ h.version }})">
+                このバージョンへ戻す
+              </button>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</article>
+
+<script>
+async function restoreHistory(noteId, historyId, version) {
+  if (!confirm('v' + version + ' へ戻しますか？現在の内容は新しい履歴として保存されます。')) return;
+  const res = await fetch('/api/v1/notes/' + noteId + '/history/' + historyId + '/restore', {
+    method: 'POST',
+  });
+  if (res.ok) {
+    window.location.href = '/notes/' + noteId;
+  } else {
+    const body = await res.json().catch(() => ({}));
+    alert('復元に失敗しました: ' + (body.error?.message ?? res.status));
+  }
+}
+</script>
+{% endblock %}

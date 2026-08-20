@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace SQNote\Service;
 
 use SQNote\Repository\AttachmentRepository;
+use SQNote\Repository\NoteHistoryRepository;
 use SQNote\Repository\NoteRepository;
 use SQNote\Repository\TagRepository;
 
@@ -15,6 +16,7 @@ class NoteService
         private NoteRepository $notes,
         private TagRepository $tags,
         private AttachmentRepository $attachments,
+        private ?NoteHistoryRepository $noteHistory = null,
     ) {}
 
     public function create(array $data): string
@@ -67,6 +69,12 @@ class NoteService
                 'title', 'content', 'content_type', 'notebook_id', 'source_url',
             ]));
             if (!empty($updateFields)) {
+                if ($this->noteHistory !== null) {
+                    $current = $this->notes->findById($id);
+                    if ($current !== null) {
+                        $this->noteHistory->save($id, $current);
+                    }
+                }
                 $this->notes->update($id, $updateFields);
             }
 

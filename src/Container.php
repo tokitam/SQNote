@@ -7,6 +7,7 @@ namespace SQNote;
 use SQNote\Database\Connection;
 use SQNote\Database\Migrator;
 use SQNote\Repository\AttachmentRepository;
+use SQNote\Repository\NoteHistoryRepository;
 use SQNote\Repository\NoteRepository;
 use SQNote\Repository\NotebookRepository;
 use SQNote\Repository\TagRepository;
@@ -61,6 +62,11 @@ class Container
         return $this->instances['attachmentRepo'] ??= new AttachmentRepository($this->pdo());
     }
 
+    public function noteHistoryRepository(): NoteHistoryRepository
+    {
+        return $this->instances['noteHistoryRepo'] ??= new NoteHistoryRepository($this->pdo());
+    }
+
     public function noteService(): NoteService
     {
         return $this->instances['noteService'] ??= new NoteService(
@@ -68,6 +74,7 @@ class Container
             $this->noteRepository(),
             $this->tagRepository(),
             $this->attachmentRepository(),
+            $this->noteHistoryRepository(),
         );
     }
 

@@ -12,6 +12,7 @@ use SQNote\Web\Controller\ImportController;
 use SQNote\Web\Controller\NotebookController;
 use SQNote\Web\Controller\NoteController;
 use SQNote\Web\Controller\NoteEditController;
+use SQNote\Web\Controller\NoteHistoryController;
 use SQNote\Web\Controller\TagController;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
@@ -76,12 +77,18 @@ class Router
             $twig, $c->noteRepository(), $c->notebookRepository(), $c->tagRepository()
         );
 
+        $noteHist = fn() => new NoteHistoryController(
+            $twig, $c->noteRepository(), $c->noteHistoryRepository(),
+            $c->notebookRepository(), $c->tagRepository()
+        );
+
         // 閲覧・作成・編集（固定パスを動的パスより先に登録する）
-        $this->add('GET',  '#^/$#',                              fn($p) => $note()->index());
-        $this->add('GET',  '#^/search$#',                        fn($p) => $note()->search());
-        $this->add('GET',  '#^/notes/new$#',                     fn($p) => $edit()->create());
-        $this->add('GET',  '#^/notes/(?P<id>[^/]+)/edit$#',      fn($p) => $edit()->edit($p));
-        $this->add('GET',  '#^/notes/(?P<id>[^/]+)$#',           fn($p) => $note()->show($p));
+        $this->add('GET',  '#^/$#',                                   fn($p) => $note()->index());
+        $this->add('GET',  '#^/search$#',                             fn($p) => $note()->search());
+        $this->add('GET',  '#^/notes/new$#',                          fn($p) => $edit()->create());
+        $this->add('GET',  '#^/notes/(?P<id>[^/]+)/edit$#',           fn($p) => $edit()->edit($p));
+        $this->add('GET',  '#^/notes/(?P<id>[^/]+)/history$#',        fn($p) => $noteHist()->index($p));
+        $this->add('GET',  '#^/notes/(?P<id>[^/]+)$#',                fn($p) => $note()->show($p));
         $this->add('POST', '#^/notes$#',                         fn($p) => $edit()->store());
         $this->add('POST', '#^/notes/(?P<id>[^/]+)$#',           fn($p) => $edit()->update($p));
         $this->add('GET',  '#^/notebooks$#',                     fn($p) => $nb()->index());
