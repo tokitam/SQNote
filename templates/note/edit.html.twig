@@ -86,6 +86,8 @@
       formats: ['bold','italic','underline','strike','code','link','header','list','blockquote','code-block','image'],
     });
     window._editor = { getContent: () => quill.root.innerHTML };
+    // フォーカスが外れた（range === null）ら自動保存
+    quill.on('selection-change', range => { if (range === null) window.autoSave?.(); });
   </script>
 {% else %}
   <script type="module">
@@ -104,6 +106,8 @@
       cmEl.style.display = '';
       window._cmView = view;
       window._editor = { getContent: () => view.state.doc.toString() };
+      // エディタからフォーカスが外れたら自動保存（blur はバブリングしないので capture で捕捉）
+      view.dom.addEventListener('blur', () => window.autoSave?.(), true);
     } catch (e) {
       console.warn('CodeMirror の読み込みに失敗しました。テキストエリアで入力できます。', e);
       window._editor = { getContent: () => document.getElementById('editor-md').value };
@@ -115,11 +119,31 @@
   const tagInput = document.getElementById('note-tags');
   tagInput.setAttribute('list', 'tag-suggestions');
 
-  async function saveNote() {
+  // 保存済みコンテンツ・保存中フラグ（自動保存の重複/競合防止に使う）
+  let _lastSavedContent = (document.getElementById('editor-md')?.value)
+                       ?? (document.getElementById('editor-quill')?.innerHTML)
+                       ?? '';
+  let isSaving = false;
+
+  const statusEl = document.getElementById('save-status');
+  let _statusTimer = null;
+  function showStatus(msg, { error = false, muted = false, persist = false } = {}) {
+    if (_statusTimer) { clearTimeout(_statusTimer); _statusTimer = null; }
+    statusEl.textContent = msg;
+    statusEl.classList.remove('hidden', 'error', 'muted');
+    if (error) statusEl.classList.add('error');
+    if (muted) statusEl.classList.add('muted');
+    if (!persist) {
+      _statusTimer = setTimeout(() => { statusEl.classList.add('hidden'); }, 2000);
+    }
+  }
+
+  async function saveNote(auto = false) {
     const btn = document.getElementById('save-btn');
-    const status = document.getElementById('save-status');
+    if (isSaving) return NOTE_ID;
+    isSaving = true;
     btn.disabled = true;
-    status.textContent = '保存中...';
+    showStatus(auto ? '自動保存中...' : '保存中...', { persist: true, muted: auto });
 
     const tags = tagInput.value.split(',').map(t => t.trim()).filter(Boolean);
     const body = {
@@ -141,32 +165,51 @@
         body: JSON.stringify(body),
       });
       if (!res.ok) {
-        status.textContent = `保存失敗: HTTP ${res.status}`;
+        showStatus(`保存失敗: HTTP ${res.status}`, { error: true });
         return;
       }
       const data = await res.json();
       if (data.ok) {
-        status.textContent = '保存しました';
+        _lastSavedContent = body.content;
+        showStatus(auto ? '自動保存しました' : '保存しました', { muted: auto });
         if (!NOTE_ID) {
           NOTE_ID = data.data.id;
           document.getElementById('save-btn').dataset.noteId = NOTE_ID;
           history.pushState({}, '', '/notes/' + NOTE_ID + '/edit');
         }
       } else {
-        status.textContent = '保存失敗: ' + data.error.message;
+        showStatus('保存失敗: ' + data.error.message, { error: true });
       }
     } catch (e) {
-      status.textContent = 'エラー: ' + e.message;
+      showStatus('エラー: ' + e.message, { error: true });
     } finally {
+      isSaving = false;
       btn.disabled = false;
     }
     return NOTE_ID;
   }
 
-  document.getElementById('save-btn').addEventListener('click', saveNote);
+  // blur トリガーの自動保存（500ms デバウンス）
+  let _autoSaveTimer = null;
+  function autoSave() {
+    if (_autoSaveTimer) clearTimeout(_autoSaveTimer);
+    _autoSaveTimer = setTimeout(() => {
+      if (!NOTE_ID) return;          // 新規ノートは保存先未確定のため自動保存しない
+      if (isSaving) return;          // 手動保存と競合しない
+      const current = window._editor ? window._editor.getContent() : '';
+      if (current === _lastSavedContent) return;  // 変更がなければ保存しない
+      saveNote(true);
+    }, 500);
+  }
+  window.autoSave = autoSave;
+
+  document.getElementById('save-btn').addEventListener('click', () => saveNote());
   document.addEventListener('keydown', e => {
     if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveNote(); }
   });
+
+  // textarea フォールバック時の blur 自動保存（CodeMirror 読み込み失敗時に有効）
+  document.getElementById('editor-md')?.addEventListener('blur', autoSave);
 
   // ===== 添付ファイル =====
   const attachState = { uploading: false };
