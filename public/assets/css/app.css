@@ -200,7 +200,10 @@ a:hover { text-decoration: underline; }
 .export-notebook-filter { margin-top: 12px; }
 .export-notebook-filter summary { font-size: 13px; color: var(--color-accent); cursor: pointer; }
 .notebook-export-list { list-style: none; margin-top: 8px; display: flex; flex-wrap: wrap; gap: 8px; }
-.save-status { font-size: 12px; color: var(--color-muted); height: 18px; }
+.save-status { font-size: 12px; color: var(--color-text); height: 18px; transition: opacity 0.5s; }
+.save-status.hidden { opacity: 0; }
+.save-status.error { color: var(--color-danger); }
+.save-status.muted { color: var(--color-muted); }
 
 /* Login page */
 .login-page { display: flex; align-items: center; justify-content: center; min-height: 100vh; background: var(--color-bg); }
