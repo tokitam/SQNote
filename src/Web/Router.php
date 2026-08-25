@@ -87,8 +87,9 @@ class Router
         $this->add('GET',  '#^/search$#',                             fn($p) => $note()->search());
         $this->add('GET',  '#^/notes/new$#',                          fn($p) => $edit()->create());
         $this->add('GET',  '#^/notes/(?P<id>[^/]+)/edit$#',           fn($p) => $edit()->edit($p));
-        $this->add('GET',  '#^/notes/(?P<id>[^/]+)/history$#',        fn($p) => $noteHist()->index($p));
-        $this->add('GET',  '#^/notes/(?P<id>[^/]+)$#',                fn($p) => $note()->show($p));
+        $this->add('GET',  '#^/notes/(?P<id>[^/]+)/history/(?P<hid>[^/]+)/diff$#', fn($p) => $noteHist()->diff($p));
+        $this->add('GET',  '#^/notes/(?P<id>[^/]+)/history$#',                    fn($p) => $noteHist()->index($p));
+        $this->add('GET',  '#^/notes/(?P<id>[^/]+)$#',                            fn($p) => $note()->show($p));
         $this->add('POST', '#^/notes$#',                         fn($p) => $edit()->store());
         $this->add('POST', '#^/notes/(?P<id>[^/]+)$#',           fn($p) => $edit()->update($p));
         $this->add('GET',  '#^/notebooks$#',                     fn($p) => $nb()->index());
