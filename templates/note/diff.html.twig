@@ -1,0 +1,129 @@
+{% extends 'layout.html.twig' %}
+
+{% block title %}差分: v{{ history.version }} ↔ 現在 — {{ note.title ?: '(無題)' }} — SQNote{% endblock %}
+
+{% block head %}
+<style>
+.diff-section { margin-bottom: 2rem; }
+.diff-section h2 { font-size: 1rem; color: #666; margin-bottom: 0.5rem; }
+.diff-table { width: 100%; border-collapse: collapse; font-family: monospace; font-size: 0.85rem; }
+.diff-table td { padding: 2px 8px; vertical-align: top; white-space: pre-wrap; word-break: break-all; }
+.diff-table .line-num { width: 3rem; text-align: right; color: #999; user-select: none; border-right: 1px solid #e1e4e8; padding-right: 8px; }
+.diff-table tr.added   { background: #e6ffed; }
+.diff-table tr.removed { background: #ffeef0; }
+.diff-table tr.added   .sign { color: #22863a; }
+.diff-table tr.removed .sign { color: #cb2431; }
+.diff-table tr.added   .line-num,
+.diff-table tr.removed .line-num { background: inherit; }
+.diff-no-change { color: #666; font-style: italic; padding: 1rem 0; }
+.diff-title-row { display: flex; gap: 1rem; align-items: baseline; }
+.diff-title-old { text-decoration: line-through; color: #cb2431; }
+.diff-title-new { color: #22863a; }
+</style>
+{% endblock %}
+
+{% block content %}
+<article class="note-history">
+  <header class="note-detail-header">
+    <h1>差分: v{{ history.version }} ↔ 現在</h1>
+    <p class="note-detail-meta">
+      保存日時: {{ history.saved_at|slice(0, 19)|replace({'T': ' '}) }}
+    </p>
+    <div class="note-detail-actions">
+      <a href="/notes/{{ note.id }}/history" class="btn">← 履歴一覧へ戻る</a>
+      <button class="btn" onclick="restoreHistory()">このバージョンへ戻す</button>
+    </div>
+  </header>
+
+  <div id="diff-container">
+    <p>差分を計算中...</p>
+  </div>
+</article>
+
+<script src="https://cdn.jsdelivr.net/npm/diff@7/dist/diff.min.js"></script>
+<script>
+const historyData = {{ {title: history.title, content: history.content}|json_encode|raw }};
+const currentData = {{ {title: note.title, content: note.content}|json_encode|raw }};
+const noteId      = {{ note.id|json_encode|raw }};
+const historyId   = {{ history.id|json_encode|raw }};
+const version     = {{ history.version }};
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function renderLineDiff(oldText, newText) {
+  if (typeof Diff === 'undefined') {
+    return '<p class="diff-no-change">⚠ diff ライブラリの読み込みに失敗しました（オフライン環境では使用できません）</p>';
+  }
+
+  const parts = Diff.diffLines(oldText, newText);
+  if (parts.every(p => !p.added && !p.removed)) {
+    return '<p class="diff-no-change">差分はありません。</p>';
+  }
+
+  let html = '<table class="diff-table"><tbody>';
+  let oldLine = 1, newLine = 1;
+
+  for (const part of parts) {
+    const lines = part.value.replace(/\n$/, '').split('\n');
+    const cls   = part.added ? 'added' : part.removed ? 'removed' : 'context';
+    const sign  = part.added ? '+' : part.removed ? '−' : ' ';
+
+    for (const line of lines) {
+      const oldNum = part.added   ? ''      : oldLine++;
+      const newNum = part.removed ? ''      : newLine++;
+      html += `<tr class="${cls}">
+        <td class="line-num">${oldNum}</td>
+        <td class="line-num">${newNum}</td>
+        <td class="sign">${sign}</td>
+        <td>${escapeHtml(line)}</td>
+      </tr>`;
+    }
+  }
+
+  html += '</tbody></table>';
+  return html;
+}
+
+function renderTitleDiff(oldTitle, newTitle) {
+  if (oldTitle === newTitle) return '';
+
+  const parts = Diff.diffWords(oldTitle, newTitle);
+  let html = '<div class="diff-section"><h2>タイトルの変更</h2><div class="diff-title-row">';
+  html += '<span class="diff-title-old">' + escapeHtml(oldTitle || '(無題)') + '</span>';
+  html += '<span>→</span>';
+  html += '<span class="diff-title-new">' + escapeHtml(newTitle || '(無題)') + '</span>';
+  html += '</div></div>';
+  return html;
+}
+
+function render() {
+  let html = '';
+  html += renderTitleDiff(historyData.title, currentData.title);
+  html += '<div class="diff-section"><h2>本文の差分（← v' + version + ' / 現在 →）</h2>';
+  html += renderLineDiff(historyData.content, currentData.content);
+  html += '</div>';
+  document.getElementById('diff-container').innerHTML = html;
+}
+
+async function restoreHistory() {
+  if (!confirm('v' + version + ' へ戻しますか？現在の内容は新しい履歴として保存されます。')) return;
+  const res = await fetch('/api/v1/notes/' + noteId + '/history/' + historyId + '/restore', {
+    method: 'POST',
+  });
+  if (res.ok) {
+    window.location.href = '/notes/' + noteId;
+  } else {
+    const body = await res.json().catch(() => ({}));
+    alert('復元に失敗しました: ' + (body.error?.message ?? res.status));
+  }
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', render);
+} else {
+  render();
+}
+</script>
+{% endblock %}
