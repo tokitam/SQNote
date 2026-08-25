@@ -54,7 +54,7 @@ a:hover { text-decoration: underline; }
 .note-detail-meta { font-size: 13px; color: var(--color-muted); margin-bottom: 12px; }
 .note-detail-meta .tag { background: #e8f0fe; color: var(--color-accent); border-radius: 3px; padding: 1px 6px; margin-right: 4px; }
 .note-detail-actions { display: flex; gap: 8px; }
-.note-body { line-height: 1.7; max-width: 800px; }
+.note-body { line-height: 1.7; max-width: 800px; cursor: text; }
 .note-body h1, .note-body h2, .note-body h3 { margin: 1em 0 0.5em; }
 .note-body p { margin-bottom: 0.8em; }
 .note-body code { background: #f4f4f4; padding: 1px 4px; border-radius: 3px; font-family: monospace; }

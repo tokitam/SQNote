@@ -25,7 +25,7 @@
     </div>
   </header>
 
-  <div class="note-body">
+  <div class="note-body" id="note-body">
     {{ note.content_html|raw }}
   </div>
 
@@ -53,5 +53,10 @@ async function deleteNote(id) {
   const res = await fetch('/api/v1/notes/' + id, { method: 'DELETE' });
   if (res.ok) window.location.href = '/';
 }
+
+document.getElementById('note-body').addEventListener('click', function(e) {
+  if (e.target.closest('a, img')) return;
+  window.location.href = '/notes/{{ note.id }}/edit';
+});
 </script>
 {% endblock %}
