@@ -138,7 +138,7 @@
     }
   }
 
-  async function saveNote(auto = false) {
+  async function saveNote(auto = false, redirect = false) {
     const btn = document.getElementById('save-btn');
     if (isSaving) return NOTE_ID;
     isSaving = true;
@@ -171,12 +171,17 @@
       const data = await res.json();
       if (data.ok) {
         _lastSavedContent = body.content;
-        showStatus(auto ? '自動保存しました' : '保存しました', { muted: auto });
         if (!NOTE_ID) {
           NOTE_ID = data.data.id;
           document.getElementById('save-btn').dataset.noteId = NOTE_ID;
           history.pushState({}, '', '/notes/' + NOTE_ID + '/edit');
         }
+        // 手動保存（保存ボタン / Cmd+S）のときは閲覧画面へ戻る
+        if (redirect && NOTE_ID) {
+          window.location.href = '/notes/' + NOTE_ID;
+          return NOTE_ID;
+        }
+        showStatus(auto ? '自動保存しました' : '保存しました', { muted: auto });
       } else {
         showStatus('保存失敗: ' + data.error.message, { error: true });
       }
@@ -203,9 +208,9 @@
   }
   window.autoSave = autoSave;
 
-  document.getElementById('save-btn').addEventListener('click', () => saveNote());
+  document.getElementById('save-btn').addEventListener('click', () => saveNote(false, true));
   document.addEventListener('keydown', e => {
-    if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveNote(); }
+    if ((e.metaKey || e.ctrlKey) && e.key === 's') { e.preventDefault(); saveNote(false, true); }
   });
 
   // textarea フォールバック時の blur 自動保存（CodeMirror 読み込み失敗時に有効）

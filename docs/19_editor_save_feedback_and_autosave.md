@@ -9,13 +9,14 @@
   - `.save-status.hidden { opacity: 0; }`（フェードアウト用）、`.save-status.error { color: var(--color-danger); }`（失敗表示）、`.save-status.muted { color: var(--color-muted); }`（自動保存表示）を追加。
 - `templates/note/edit.html.twig`
   - `showStatus(msg, { error, muted, persist })` ヘルパーを追加。メッセージを表示し、`persist` でない場合は 2 秒後に `hidden` クラスを付けてフェードアウトさせる。
-  - `saveNote(auto = false)` を `showStatus()` ベースに書き換え。手動保存は「保存中...」→「保存しました」、自動保存は「自動保存中...」→「自動保存しました」（グレー）を表示。失敗時は赤色で表示。
+  - `saveNote(auto = false, redirect = false)` を `showStatus()` ベースに書き換え。手動保存は「保存中...」→「保存しました」、自動保存は「自動保存中...」→「自動保存しました」（グレー）を表示。失敗時は赤色で表示。
+  - 保存ボタン押下・`Cmd/Ctrl + S` による手動保存（`redirect = true`）の成功時は、閲覧画面 `/notes/{id}` へ遷移する。blur 自動保存や添付アップロード時の内部保存（`ensureNoteId`）では遷移しない。
   - 保存成功時に `_lastSavedContent` を更新。`isSaving` フラグで手動保存と自動保存の競合を防止。
   - `autoSave()` を追加（500ms デバウンス）。blur 時に、新規ノート（`NOTE_ID === null`）や内容未変更の場合は保存をスキップする。
   - エディタごとの blur 配線: CodeMirror は `view.dom.addEventListener('blur', ..., true)`、Quill は `selection-change` で `range === null` のとき、textarea フォールバックは `blur` イベントで `autoSave()` を呼ぶ。
 
 ## 使い方
-- 保存ボタン押下または `Cmd/Ctrl + S` で保存すると、「保存しました」が表示され約 2 秒でフェードアウトする。失敗時は赤字で理由が表示される。
+- 保存ボタン押下または `Cmd/Ctrl + S` で保存すると、保存後に閲覧画面（`/notes/{id}`）へ戻る。失敗時は編集画面に留まり赤字で理由が表示される。
 - エディタ本文からフォーカスを外すと、変更があれば自動的に保存され「自動保存しました」がグレーで表示される。
 - 新規ノート（まだ一度も保存していない状態）では blur による自動保存は行われない。保存ボタンで一度保存すると以降は自動保存が有効になる。
 
