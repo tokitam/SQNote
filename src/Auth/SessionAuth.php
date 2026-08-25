@@ -12,6 +12,24 @@ class SessionAuth
         $name     = $sessionConfig['name'] ?? 'sqnote_sess';
         $secure   = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
 
+        // 専用のセッション保存先を使い、他 vhost / Debian の sessionclean cron に
+        // 消されないようにする。保存先が共有の /var/lib/php/sessions のままだと、
+        // その GC 設定（既定 24 分）でファイルが削除されセッションが早期に切れる。
+        $savePath = $sessionConfig['save_path'] ?? __DIR__ . '/../../data/sessions';
+        if (!is_dir($savePath)) {
+            @mkdir($savePath, 0700, true);
+        }
+        if (is_dir($savePath) && is_writable($savePath)) {
+            session_save_path($savePath);
+        }
+
+        // サーバ側のセッションデータ寿命を Cookie の寿命に合わせる（既定は 1440 秒）。
+        // これを延ばさないと、Cookie が生きていてもサーバ側で GC され切れてしまう。
+        ini_set('session.gc_maxlifetime', (string)$lifetime);
+        // 専用保存先なので、自前 GC を有効にして古いファイルを掃除する。
+        ini_set('session.gc_probability', '1');
+        ini_set('session.gc_divisor', '100');
+
         session_name($name);
         session_set_cookie_params([
             'lifetime' => $lifetime,
@@ -21,6 +39,18 @@ class SessionAuth
             'samesite' => 'Lax',
         ]);
         session_start();
+
+        // スライディング有効期限: アクセスのたびに Cookie を再送し、
+        // 認証済みなら失効までの時間を毎回リセットする。
+        if (($_SESSION['authenticated'] ?? false) && !headers_sent()) {
+            setcookie($name, session_id(), [
+                'expires'  => time() + $lifetime,
+                'path'     => '/',
+                'secure'   => $secure,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
+        }
     }
 
     public function login(string $user, string $pass, string $expectedUser, string $expectedPass): bool

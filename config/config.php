@@ -12,7 +12,8 @@ return [
         'pass' => getenv('SQNOTE_BASIC_PASS') ?: 'hoge2hoge',
     ],
     'session' => [
-        'lifetime' => (int)(getenv('SQNOTE_SESSION_LIFETIME') ?: 604800),
-        'name'     => 'sqnote_sess',
+        'lifetime'  => (int)(getenv('SQNOTE_SESSION_LIFETIME') ?: 604800),
+        'name'      => 'sqnote_sess',
+        'save_path' => getenv('SQNOTE_SESSION_PATH') ?: __DIR__ . '/../data/sessions',
     ],
 ];
