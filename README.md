@@ -2,6 +2,8 @@
 
 SQLite（SQLCipher 暗号化）をメインDBとして使用するノートアプリ。データファイルを1つコピーするだけでバックアップ・リストアができる。
 
+<img width="1448" height="1086" alt="ChatGPT Image 2026年8月26日 11_18_24" src="https://github.com/user-attachments/assets/13163af8-74b2-4a71-95a9-a5dcfe6a4103" />
+
 ## 特徴
 
 - **ポータビリティ**: `.sqnote` ファイル（SQLCipher 暗号化 SQLite DB）を1ファイルコピーするだけでバックアップ・リストア完了
